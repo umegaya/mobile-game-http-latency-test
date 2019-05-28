@@ -1,4 +1,4 @@
-resource "aws_placement_group" "latency-research-http2" {
+/*resource "aws_placement_group" "latency-research-http2" {
   name     = "latency-research-http2"
   strategy = "spread"
 }
@@ -22,37 +22,9 @@ resource "aws_autoscaling_group" "latency-research-http2" {
   launch_configuration      = "${aws_launch_configuration.latency-research-http2.name}"
   vpc_zone_identifier       = ["${aws_subnet.latency-research-http2[0].id}", "${aws_subnet.latency-research-http2[1].id}"]
 
-  /* initial_lifecycle_hook {
-    name                 = "foobar"
-    default_result       = "CONTINUE"
-    heartbeat_timeout    = 2000
-    lifecycle_transition = "autoscaling:EC2_INSTANCE_LAUNCHING"
-
-    notification_metadata = <<EOF
-{
-  "foo": "bar"
-}
-EOF
-
-    notification_target_arn = "arn:aws:sqs:us-east-1:444455556666:queue1*"
-    role_arn                = "arn:aws:iam::123456789012:role/S3Access"
-  }
-
-  tag {
-    key                 = "foo"
-    value               = "bar"
-    propagate_at_launch = true
-  } */
-
   timeouts {
     delete = "15m"
   }
-
-  /*tags = [{
-    key                 = "Name"
-    value               = "ipsum"
-    propagate_at_launch = false
-  }]*/
 }
 
 resource "aws_autoscaling_policy" "latency-research-http2" {
@@ -67,3 +39,10 @@ resource "aws_autoscaling_policy" "latency-research-http2" {
     target_value = 70.0
   }
 }
+
+resource "aws_autoscaling_attachment" "latency-research-http2" {
+  autoscaling_group_name = "${aws_autoscaling_group.latency-research-http2.id}"
+  alb_target_group_arn   = "${aws_lb_target_group.latency-research-http2.arn}"
+}
+
+*/

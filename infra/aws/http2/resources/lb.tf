@@ -20,9 +20,10 @@ resource "aws_security_group" "latency-research-http2" {
 
   ingress {
     # TLS
-    from_port   = 443
-    to_port     = 443
-    protocol    = "-1"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -83,14 +84,20 @@ resource "aws_lb" "latency-research-http2" {
 
 resource "aws_lb_target_group" "latency-research-http2" {
   name        = "latency-research-http2"
-  port        = 443
-  protocol    = "HTTPS"
+  port        = 80
+  protocol    = "HTTP"
   target_type = "instance"
   vpc_id      = "${aws_vpc.latency-research-http2.id}"
 }
 
-resource "aws_autoscaling_attachment" "latency-research-http2" {
-  autoscaling_group_name = "${aws_autoscaling_group.latency-research-http2.id}"
-  alb_target_group_arn   = "${aws_lb_target_group.latency-research-http2.arn}"
+resource "aws_lb_listener" "latency-research-http2" {
+  load_balancer_arn = "${aws_lb.latency-research-http2.arn}"
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = "${aws_lb_target_group.latency-research-http2.arn}"
+  }
 }
 
