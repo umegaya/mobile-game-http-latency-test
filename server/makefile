@@ -15,3 +15,6 @@ sv:
 
 fg:
 	docker run --init --rm -ti -p 80:80 $(IMAGE) node index.js
+
+deploy_http2:
+	bash ../infra/aws/http2/deploy.sh $(IMAGE)

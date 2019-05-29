@@ -13,6 +13,15 @@ resource "aws_internet_gateway" "latency-research-http2" {
     }
 }
 
+resource "aws_route_table" "latency-research-http2" {
+  vpc_id = "${aws_vpc.latency-research-http2.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.latency-research-http2.id}"
+  }
+}
+
 resource "aws_security_group" "latency-research-http2" {
   name        = "latency-research-http2"
   description = "Allow necessary inbound traffic for latency research http2"
@@ -24,6 +33,16 @@ resource "aws_security_group" "latency-research-http2" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  ingress {
+    # SSH
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 
   egress {
@@ -31,6 +50,7 @@ resource "aws_security_group" "latency-research-http2" {
     to_port         = 0
     protocol        = "-1"
     cidr_blocks     = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 }
 
@@ -39,6 +59,7 @@ resource "aws_subnet" "latency-research-http2" {
   vpc_id     = "${aws_vpc.latency-research-http2.id}"
   cidr_block = "10.80.${count.index + 1}.0/24"
   availability_zone       = "${data.aws_availability_zones.available.names[count.index]}"
+  map_public_ip_on_launch = true
 }
 
 resource "aws_s3_bucket" "latency-research-http2-lb-logs" {
@@ -100,4 +121,3 @@ resource "aws_lb_listener" "latency-research-http2" {
     target_group_arn = "${aws_lb_target_group.latency-research-http2.arn}"
   }
 }
-

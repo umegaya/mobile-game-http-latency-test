@@ -16,3 +16,8 @@ resource "aws_route53_record" "example_acm_public" {
   records = ["${lookup(aws_acm_certificate.latency-research-http2.domain_validation_options[count.index],"resource_record_value")}"]
 }
 */
+
+resource "aws_key_pair" "latency-research-http2" {
+  key_name   = "latency-research-http2-key-pair"
+  public_key = "${data.local_file.latency-research-http2-cert.content}"
+}

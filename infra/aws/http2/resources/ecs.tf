@@ -8,7 +8,7 @@ resource "aws_ecs_task_definition" "latency-research-http2" {
   container_definitions = <<DEFS
   [{
     "name": "websv",
-    "image": "${aws_ecr_repository.latency-research-http2.repository_url}/websv:latest",
+    "image": "${aws_ecr_repository.latency-research-http2.repository_url}:latest",
     "essential": true,
     "portMappings": [
       {
@@ -16,8 +16,9 @@ resource "aws_ecs_task_definition" "latency-research-http2" {
         "hostPort": 80
       }
     ],
-    "memory": 2048,
-    "cpu": 80
+    "memory": 1536,
+    "cpu": 768,
+    "command": ["node", "index.js"]
   }]
 DEFS
 
@@ -34,13 +35,10 @@ resource "aws_ecs_service" "latency-research-http2" {
   launch_type     = "EC2"
   cluster         = "${aws_ecs_cluster.latency-research-http2.id}"
   task_definition = "${aws_ecs_task_definition.latency-research-http2.arn}"
-  desired_count   = 1
-  iam_role        = "${aws_iam_role.latency-research-http2.arn}"
+  iam_role        = "${aws_iam_role.latency-research-http2-ecs-service.arn}"
 
-  ordered_placement_strategy {
-    type  = "binpack"
-    field = "cpu"
-  }
+  scheduling_strategy = "DAEMON"
+  // for "REPLICA" storategy. desired_count   = 1
 
   load_balancer {
     target_group_arn = "${aws_lb_target_group.latency-research-http2.arn}"
@@ -48,13 +46,19 @@ resource "aws_ecs_service" "latency-research-http2" {
     container_port   = 80
   }
 
+  /* for "REPLICA" storategy.
+  ordered_placement_strategy {
+    type  = "binpack"
+    field = "cpu"
+  }
+
   placement_constraints {
     type       = "memberOf"
     expression = "attribute:ecs.availability-zone in [ap-northeast-1a, ap-northeast-1c]"
-  }
+  } */
 }
 
-resource "aws_appautoscaling_target" "latency-research-http2" {
+/* resource "aws_appautoscaling_target" "latency-research-http2" {
   max_capacity       = 3
   min_capacity       = 1
   resource_id        = "service/${aws_ecs_cluster.latency-research-http2.name}/${aws_ecs_service.latency-research-http2.name}"
@@ -77,6 +81,4 @@ resource "aws_appautoscaling_policy" "latency-research-http2" {
 
     target_value = 80.0
   }
-}
-
-
+} */

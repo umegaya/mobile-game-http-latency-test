@@ -28,6 +28,13 @@ tf() {
 		-v $CWD:/tf -w /tf/resources hashicorp/terraform:light $@
 }
 
+if [ ! -e "$CWD/resources/cert/id_rsa" ]; then
+	echo "generate key pair for AWS...."
+	ssh-keygen -m PEM -t rsa -b 4096 -N '' -f $CWD/resources/cert/id_rsa
+	echo "generate at $CWD/resources/cert/id_rsa. please preserve it in secure place"
+fi
+
 tf init -input=false
+# tf taint aws_autoscaling_group.latency-research-http2 
 tf plan --out $CWD/exec.tfplan
 tf apply $CWD/exec.tfplan

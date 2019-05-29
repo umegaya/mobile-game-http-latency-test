@@ -3,18 +3,25 @@ data "aws_availability_zones" "available" {
 }
 data "aws_elb_service_account" "main" {}
 
-data "aws_ami" "ubuntu" {
+data "aws_ami" "latency-research-http2" {
   most_recent = true
 
   filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-*-18.10-amd64-server-*"]
+    name   = "image-id"
+    values = ["ami-0e52aad6ac7733a6a"]
   }
 
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
+    owners = ["591542846629"] // amazon
+}
 
-  owners = ["099720109477"] # Canonical
+data "local_file" "latency-research-http2-cert" {
+  filename = "${path.module}/cert/id_rsa.pub"
+}
+
+data "template_file" "latency-research-http2-ec2-userdata" {
+  template = "${file("${path.module}/templates/userdata.sh.tpl")}"
+
+  vars = {
+    ecs_cluster = "${aws_ecs_cluster.latency-research-http2.name}"
+  }
 }
