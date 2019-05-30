@@ -24,7 +24,7 @@ resource "aws_autoscaling_group" "latency-research-http2" {
   force_delete              = true
   placement_group           = "${aws_placement_group.latency-research-http2.id}"
   launch_configuration      = "${aws_launch_configuration.latency-research-http2.name}"
-  vpc_zone_identifier       = ["${aws_subnet.latency-research-http2[0].id}", "${aws_subnet.latency-research-http2[1].id}"]
+  vpc_zone_identifier       = ["${aws_subnet.latency-research-http2.0.id}", "${aws_subnet.latency-research-http2.1.id}"]
 
   timeouts {
     delete = "15m"

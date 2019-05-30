@@ -1,5 +1,10 @@
-/*resource "aws_acm_certificate" "latency-research-http2" {
-  domain_name       = "elb.amazonaws.com"
+resource "aws_route53_zone" "latency-research-http2" {
+  name = "${var.root_domain}"
+}
+
+
+resource "aws_acm_certificate" "latency-research-http2" {
+  domain_name       = "latency-research-http2.service.${var.root_domain}"
   validation_method = "DNS"
 
   lifecycle {
@@ -7,15 +12,13 @@
   }
 }
 
-resource "aws_route53_record" "example_acm_public" {
-  count = "${length(aws_acm_certificate.latency-research-http2.domain_validation_options)}"
-  zone_id = "${var.example_zone_id}"
-  name = "${lookup(aws_acm_certificate.latency-research-http2.domain_validation_options[count.index],"resource_record_name")}"
-  type = "${lookup(aws_acm_certificate.latency-research-http2.domain_validation_options[count.index],"resource_record_type")}"
+resource "aws_route53_record" "latency-research-http2" {
+  zone_id = "${aws_route53_zone.latency-research-http2.zone_id}"
+  name = "${aws_acm_certificate.latency-research-http2.domain_validation_options.0.resource_record_name}"
+  type = "${aws_acm_certificate.latency-research-http2.domain_validation_options.0.resource_record_type}"
+  records = ["${aws_acm_certificate.latency-research-http2.domain_validation_options.0.resource_record_value}"]
   ttl = "300"
-  records = ["${lookup(aws_acm_certificate.latency-research-http2.domain_validation_options[count.index],"resource_record_value")}"]
 }
-*/
 
 resource "aws_key_pair" "latency-research-http2" {
   key_name   = "latency-research-http2-key-pair"

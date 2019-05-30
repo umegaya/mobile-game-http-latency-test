@@ -4,6 +4,8 @@ set -e
 
 AWS_CLI_VERSION=758eef2a762bc3a4d7df2a41f655b7a884b492fa
 CWD=$(cd $(dirname $0) && pwd)
+DOMAIN=$1
+TFVARS="-var root_domain=${DOMAIN}"
 
 aws() {
 	docker run --rm -ti \
@@ -12,13 +14,6 @@ aws() {
 		-e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
 		governmentpaas/awscli:$AWS_CLI_VERSION aws $@
 }
-
-#AWS_ALB_SUBNETS=$(aws ec2 describe-subnets | jq .Subnets[].SubnetId)
-
-#echo $AWS_ALB_SUBNETS
-
-#aws elbv2 create-load-balancer --name my-load-balancer \
-#	--subnets subnet-12345678 subnet-23456789 --security-groups sg-12345678
 
 tf() {
 	docker run -i -t -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
@@ -34,7 +29,10 @@ if [ ! -e "$CWD/resources/cert/id_rsa" ]; then
 	echo "generate at $CWD/resources/cert/id_rsa. please preserve it in secure place"
 fi
 
+echo "use domain: ${DOMAIN}"
+
 tf init -input=false
+# tf import aws_route53_zone.latency-research-http2 Z23K2L6PFTIAZ8
 # tf taint aws_autoscaling_group.latency-research-http2 
-tf plan --out $CWD/exec.tfplan
+tf plan ${TFVARS} --out $CWD/exec.tfplan
 tf apply $CWD/exec.tfplan
