@@ -30,25 +30,27 @@ namespace LatencyResearch {
 
             Debug.Log(url);
 
-            var ping = new PingProtocol {
-                start_ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-            };
-            var req = JsonUtility.ToJson(ping);
-            byte[] postData = System.Text.Encoding.UTF8.GetBytes (req);
-            var www = new UnityWebRequest(url, "POST");
-            www.uploadHandler = (UploadHandler)new UploadHandlerRaw(postData);
-            www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-            www.SetRequestHeader("Content-Type", "application/json");
-            yield return www.SendWebRequest();
+            for (int i = 0; i < 5; i++) {
+                var ping = new PingProtocol {
+                    start_ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+                };
+                var req = JsonUtility.ToJson(ping);
+                byte[] postData = System.Text.Encoding.UTF8.GetBytes (req);
+                var www = new UnityWebRequest(url, "POST");
+                www.uploadHandler = (UploadHandler)new UploadHandlerRaw(postData);
+                www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+                www.SetRequestHeader("Content-Type", "application/json");
+                yield return www.SendWebRequest();
 
-            if (www.isNetworkError || www.isHttpError) {
-                Debug.Log(www.error);
-            } else {
-                var respPing = JsonUtility.FromJson<PingProtocol>(www.downloadHandler.text);
-                if (ping.start_ts != respPing.start_ts) {
-                    Debug.Log("invalid response:" + respPing.start_ts + "|" + www.downloadHandler.text + "|" + req);
+                if (www.isNetworkError || www.isHttpError) {
+                    Debug.Log(www.error);
+                } else {
+                    var respPing = JsonUtility.FromJson<PingProtocol>(www.downloadHandler.text);
+                    if (ping.start_ts != respPing.start_ts) {
+                        Debug.Log("invalid response:" + respPing.start_ts + "|" + www.downloadHandler.text + "|" + req);
+                    }
+                    Debug.Log("latency: " + (DateTimeOffset.Now.ToUnixTimeMilliseconds() - ping.start_ts) + " ms");
                 }
-                Debug.Log("latency: " + (DateTimeOffset.Now.ToUnixTimeMilliseconds() - ping.start_ts) + " ms");
             }
         }
     }
