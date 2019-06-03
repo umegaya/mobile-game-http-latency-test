@@ -43,7 +43,7 @@ data "template_file" "aws-module-ec2-userdata" {
   template = "${file("${path.module}/templates/userdata.sh.tpl")}"
 
   vars = {
-    ecs_cluster = "${aws_ecs_cluster.aws-module-ec2-cluster.name}"
+    ecs_cluster = "${var.ecs_cluster_name}"
   }
 }
 
@@ -55,7 +55,7 @@ data "aws_ami" "aws-module-ec2-ami-id" {
     values = ["ami-0e52aad6ac7733a6a"]
   }
 
-    owners = ["591542846629"] // amazon
+  owners = ["591542846629"] // amazon
 }
 
 resource "aws_launch_configuration" "aws-module-ec2-launch-configuration" {
@@ -64,22 +64,22 @@ resource "aws_launch_configuration" "aws-module-ec2-launch-configuration" {
   # cluster placement cannot be apply to all instance type. 
   instance_type = "${var.instance_type}"
   key_name      = "${aws_key_pair.aws-module-ec2-key-pair.key_name}"
-  security_groups = ["${aws_security_group.aws-module-lb-instance-security-group.id}"]
+  security_groups = var.security_groups
   user_data       = "${data.template_file.aws-module-ec2-userdata.rendered}"
   iam_instance_profile = "${aws_iam_instance_profile.aws-module-ec2-instance-profile.name}"
 }
 
 resource "aws_autoscaling_group" "aws-module-ec2-autoscaling-group" {
   name                      = "${var.namespace}"
-  max_size                  = "${var.min_instance_size}"
-  min_size                  = "${var.max_instance_size}"
+  max_size                  = "${var.max_instance_size}"
+  min_size                  = "${var.min_instance_size}"
   health_check_grace_period = 300
-  health_check_type         = "${var.instance_health_check_type}"
+  health_check_type         = "ELB"
   desired_capacity          = "${var.desired_instance_capacity}"
   force_delete              = true
   placement_group           = "${aws_placement_group.aws-module-ec2-placement-group.id}"
   launch_configuration      = "${aws_launch_configuration.aws-module-ec2-launch-configuration.name}"
-  vpc_zone_identifier       = ["${aws_subnet.aws-module-lb-subnet.0.id}", "${aws_subnet.aws-module-lb-subnet.1.id}"]
+  vpc_zone_identifier       = var.vpc_zone_identifier
 
   timeouts {
     delete = "15m"
@@ -99,7 +99,3 @@ resource "aws_autoscaling_policy" "aws-module-ec2-autoscaling-policy" {
   }
 }
 
-resource "aws_autoscaling_attachment" "aws-module-ec2-autoscaling-attachment" {
-  autoscaling_group_name = "${aws_autoscaling_group.aws-module-ec2-autoscaling-group.id}"
-  alb_target_group_arn   = "${aws_lb_target_group.aws-module-lb-target-group.arn}"
-}

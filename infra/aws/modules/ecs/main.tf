@@ -1,7 +1,3 @@
-resource "aws_ecr_repository" "aws-module-ecs-repository" {
-  name = "${var.namespace}"
-}
-
 resource "aws_ecs_cluster" "aws-module-ecs-cluster" {
   name = "${var.namespace}"
 }
@@ -55,7 +51,7 @@ resource "aws_ecs_service" "aws-module-ecs-service" {
   // for "REPLICA" storategy. desired_count   = 1
 
   load_balancer {
-    target_group_arn = "${aws_lb_target_group.aws-module-lb-target-group.arn}"
+    target_group_arn = "${var.lb_target_group_arn}"
     container_name   = "websv"
     container_port   = 80
   }
