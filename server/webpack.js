@@ -9,16 +9,21 @@ module.exports = {
     },
     module: {
         rules: [
-            { test: /\.ts$/, use: 'ts-loader' }
+            { test: /\.ts$/, use: 'ts-loader' },
+            {   
+                test: /\.proto$/,
+                loader: 'grpc-loader',
+                options: {
+                    static: false,
+                }
+            }
         ]
     },
     resolve: {
         // Add `.ts` and `.tsx` as a resolvable extension.
         extensions: [".ts", ".js"],
     },
-    externals: [nodeExternals({
-        whitelist: [/.*/]
-    })],
+    externals: [nodeExternals()],
     entry: path.resolve(__dirname, 'main.ts'),
     devtool: false,
     target: 'node',

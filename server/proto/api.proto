@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package latency_research_grpc;
+
+// The greeting service definition.
+service Service {
+  // Sends a greeting
+  rpc Measure (MeasureRequest) returns (MeasureReply) {}
+  rpc Health (HealthRequest) returns (HealthReply) {}
+}
+
+message MeasureRequest {
+  uint64 start_ts = 1;
+}
+
+message MeasureReply {
+  uint64 start_ts = 1;
+}
+
+message HealthRequest {
+}
+
+message HealthReply {
+  string diagnoses = 1;
+}
