@@ -5,5 +5,5 @@ import { resolve } from "dns";
 express()
     .use(bodyParser.json())
     .get('/', (req, res) => res.send())
-    .post('/measure', (req, res) => res.status(200).send(req.body))
+    .post('/api/measure', (req, res) => res.status(200).send(req.body))
     .listen(80, () => console.log(`server starts`));

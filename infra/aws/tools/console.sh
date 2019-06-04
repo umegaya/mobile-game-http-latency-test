@@ -11,5 +11,5 @@ if [ -z "$3" ]; then
     tf console
 else
     TERMINAL= source $CWD/common.sh $TFROOT
-    echo "$@" | tf console
+    echo "$3" | tf console
 fi

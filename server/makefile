@@ -1,5 +1,5 @@
 NAME=latency-research-websv
-IMAGE=umegaya/latency-research-websv
+IMAGE=
 
 .PHONY: build
 build:

@@ -13,13 +13,10 @@ resource "aws_internet_gateway" "aws-module-nw-internet-gateway" {
   }
 }
 
-resource "aws_route_table" "aws-module-nw-route-to-internet" {
-  vpc_id = "${aws_vpc.aws-module-nw-vpc.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.aws-module-nw-internet-gateway.id}"
-  }
+resource "aws_route" "aws-module-nw-vpc" {
+  route_table_id = "${aws_vpc.aws-module-nw-vpc.main_route_table_id}"
+  destination_cidr_block  = "0.0.0.0/0"
+  gateway_id  = "${aws_internet_gateway.aws-module-nw-internet-gateway.id}"
 }
 
 data "aws_availability_zones" "available" {
