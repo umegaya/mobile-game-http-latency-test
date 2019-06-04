@@ -2,6 +2,7 @@
 TYPE=#http2,grpc
 STATE=#terraform resource path
 IMAGE=#docker image
+GRPC_HOST=localhost:50051
 
 # tfvars declaration
 DOMAIN=#your.domain.com
@@ -16,8 +17,12 @@ aws-rm:
 aws-deploy:
 	make -C infra/aws deploy TYPE=$(TYPE) IMAGE=$(IMAGE) DOMAIN=$(DOMAIN)
 
-build:
-	make -C server image IMAGE=$(IMAGE)
-
 aws-console:
 	make -C infra/aws console TYPE=$(TYPE) STATE=$(STATE) DOMAIN=$(DOMAIN)
+
+aws-grpc:
+	@bash ./server/tools/measure.sh $(GRPC_HOST) ./server/proto/api.proto
+
+
+build:
+	make -C server image IMAGE=$(IMAGE)
