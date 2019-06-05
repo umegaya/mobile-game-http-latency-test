@@ -28,3 +28,4 @@ aws-show:
 
 build:
 	make -C server image IMAGE=$(IMAGE)
+
