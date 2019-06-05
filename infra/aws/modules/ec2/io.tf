@@ -1,6 +1,12 @@
 variable "namespace" {
   type = string
 }
+variable "vpc_id" {
+  type = string
+}
+variable "served_ports" {
+  type = list(number)
+}
 variable "key_pair_cert" {
   type = string
 }
@@ -18,9 +24,6 @@ variable "max_instance_size" {
 }
 variable "desired_instance_capacity" {
   type = number  
-}
-variable "security_groups" {
-  type = list(string)
 }
 variable "vpc_zone_identifier" {
   type = list(string)

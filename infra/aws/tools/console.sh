@@ -2,14 +2,14 @@
 
 CWD=$(cd $(dirname $0) && pwd)
 
-TFROOT=$CWD/../$1
-DOMAIN=$2
+TFROOT=$CWD/..
+DOMAIN=$1
 TFVARS="-var root_domain=${DOMAIN}"
 
-if [ -z "$3" ]; then
+if [ -z "$2" ]; then
     source $CWD/common.sh $TFROOT
     tf console
 else
     TERMINAL= source $CWD/common.sh $TFROOT
-    echo "$3" | tf console
+    echo "$2" | tf console
 fi

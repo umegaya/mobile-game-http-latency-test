@@ -4,29 +4,40 @@ variable "namespace" {
 variable "lb_type" {
   type = string
 }
-variable "vpc_cidr_block" {
-  type = string  
+variable "vpc_id" {
+  type = string
 }
-variable "subnet_count" {
-  type = number
+variable "served_ports" {
+  type = list(number)
 }
-variable "blacklisted_zones" {
+variable "inner_served_ports" {
+  type = list(number)
+  default = [0]
+}
+variable "subnets" {
   type = list(string)
 }
+variable "protocol" {
+  type = string
+}
+variable "inner_protocol" {
+  type = string
+  default = ""
+}
+variable "certificate_arn" {
+  type = string
+}
 
 
-output "vpc_id" {
-  value = "${aws_vpc.aws-module-nw-vpc.id}"
-}
-output "instance_security_group" {
-  value = "${aws_security_group.aws-module-nw-instance-security-group.id}"
-}
-output "subnets" {
-  value = aws_subnet.aws-module-nw-subnet
-}
 output "dns_name" {
-  value = "${aws_lb.aws-module-nw-lb.dns_name}"
+  value = "${aws_lb.aws-module-lb-lb.dns_name}"
 }
-output "arn" {
-  value = "${aws_lb.aws-module-nw-lb.arn}"
+output "target_group_arns" {
+  value = [for tg in aws_lb_target_group.aws-module-lb-target-group: tg.arn]
+}
+output "listener_arns" {
+  value = concat(
+    [for l in aws_lb_listener.aws-module-lb-alb-listener: l.arn],
+    [for l in aws_lb_listener.aws-module-lb-nlb-listener: l.arn]
+  )
 }

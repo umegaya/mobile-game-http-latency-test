@@ -4,16 +4,13 @@ variable "namespace" {
 variable "root_domain" {
   type = string
 }
-variable "host_name_prefix" {
-  type = string
-}
-variable "lb_dns_name" {
-  type = string
+variable "cn_lb_mapping" {
+  type = list(map(string))
 }
 
 
-output "certificate_arn" {
-  value = "${aws_acm_certificate.aws-module-cert-certificate.arn}"
+output "certificates" {
+  value = [for c in aws_acm_certificate.aws-module-cert-certificate: c.arn]
 }
 output "zone_id" {
   value = "${data.aws_route53_zone.aws-module-cert-root-domain.zone_id}"

@@ -58,13 +58,49 @@ data "aws_ami" "aws-module-ec2-ami-id" {
   owners = ["591542846629"] // amazon
 }
 
+resource "aws_security_group" "aws-module-ec2-security-group" {
+  name = "${var.namespace}-instance"
+  description = "Allow necessary inbound traffic for backend node"
+  vpc_id      = "${var.vpc_id}"
+
+  ingress {
+    # SSH
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+}
+
+resource "aws_security_group_rule" "aws-module-ec2-security-group-rule" {
+  count           = "${length(var.served_ports)}"
+  type            = "ingress"
+  from_port       = "${var.served_ports[count.index]}"
+  to_port         = "${var.served_ports[count.index]}"
+  protocol        = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  ipv6_cidr_blocks = ["::/0"]
+
+  security_group_id = "${aws_security_group.aws-module-ec2-security-group.id}"
+}
+
+
 resource "aws_launch_configuration" "aws-module-ec2-launch-configuration" {
   name          = "${var.namespace}"
   image_id      = "${data.aws_ami.aws-module-ec2-ami-id.id}"
   # cluster placement cannot be apply to all instance type. 
   instance_type = "${var.instance_type}"
   key_name      = "${aws_key_pair.aws-module-ec2-key-pair.key_name}"
-  security_groups = var.security_groups
+  security_groups = ["${aws_security_group.aws-module-ec2-security-group.id}"]
   user_data       = "${data.template_file.aws-module-ec2-userdata.rendered}"
   iam_instance_profile = "${aws_iam_instance_profile.aws-module-ec2-instance-profile.name}"
 }
