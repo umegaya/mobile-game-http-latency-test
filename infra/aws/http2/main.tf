@@ -65,6 +65,9 @@ module "ec2" {
   cpu_utilization_threshold = 70.0
 }
 
+/* ------------------------------------------------------
+  http load balancing settings
+------------------------------------------------------ */
 resource "aws_lb_target_group" "latency-research-http2-lb-target-group" {
   name        = "latency-research-http2"
   port        = 80
@@ -125,7 +128,55 @@ resource "aws_lb_listener_rule" "latency-research-http2-listener-rule-static" {
   }
 }
 
-resource "aws_autoscaling_attachment" "aws-module-ec2-autoscaling-attachment" {
+resource "aws_autoscaling_attachment" "latency-research-http2-autoscaling-attachment" {
   autoscaling_group_name = "${module.ec2.autoscaling_group_name}"
   alb_target_group_arn   = "${aws_lb_target_group.latency-research-http2-lb-target-group.arn}"
+}
+
+
+
+/* ------------------------------------------------------
+  grpc load balancing settings
+------------------------------------------------------ 
+resource "aws_lb_listener_rule" "latency-research-grpc-listener-rule-api" {
+  listener_arn = "${aws_lb_listener.latency-research-grpc-lb-listener.arn}"
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = "${aws_lb_target_group.latency-research-grpc-lb-target-group.arn}"
+  }
+}
+resource "aws_lb_listener" "latency-research-grpc-lb-listener" {
+  load_balancer_arn = "${module.lb.arn}"
+  port              = 50051
+  protocol          = "TCP"
+
+  default_action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not Found"
+      status_code  = "404"
+    }
+  }
+}
+*/
+
+resource "aws_lb_target_group" "latency-research-grpc-lb-target-group" {
+  name        = "latency-research-grpc"
+  port        = 50051
+  protocol    = "TCP"
+  target_type = "instance"
+  vpc_id      = "${module.lb.vpc_id}"
+
+  depends_on  = [
+    "aws_lb_listener.latency-research-http2-lb-listener"
+  ]
+}
+
+resource "aws_autoscaling_attachment" "latency-research-grpc-autoscaling-attachment" {
+  autoscaling_group_name = "${module.ec2.autoscaling_group_name}"
+  alb_target_group_arn   = "${aws_lb_target_group.latency-research-grpc-lb-target-group.arn}"
 }

@@ -5,7 +5,7 @@ IMAGE=#docker image
 GRPC_HOST=localhost:50051
 
 # tfvars declaration
-DOMAIN=#your.domain.com
+DOMAIN=#your.domain.name
 
 
 aws:
