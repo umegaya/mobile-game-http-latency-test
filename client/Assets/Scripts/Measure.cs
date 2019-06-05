@@ -17,9 +17,9 @@ namespace LatencyResearch {
             var rest = new RestPing(domain, iaas);
             var grpc = new GrpcPing(domain, iaas);
 
-            yield return rest.Start(5, false);
+            yield return rest.Start(5, parallel);
             Dump("rest", rest);
-            yield return grpc.Start(5, false);
+            yield return grpc.Start(5, parallel);
             Dump("grpc", grpc);
         }
 

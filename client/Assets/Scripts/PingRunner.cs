@@ -52,6 +52,7 @@ class RestPing : PingRunner {
             for (int i = 0; i < n_attempt; i++) {
                 start_ts_list[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 wwws[i] = CreateRequest(start_ts_list[i]);
+                wwws[i].SendWebRequest();
             }
             int n_finish = 0;
             while (n_attempt > n_finish) {
