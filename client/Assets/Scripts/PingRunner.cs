@@ -8,21 +8,85 @@ using Grpc.Core;
 using MeasureTask = Grpc.Core.AsyncUnaryCall<global::LatencyResearchGrpc.MeasureReply>;
 
 namespace LatencyResearch {
-class PingRunner {
+public class PingRunner {
+    public enum Pattern {
+        Sequencial,
+        PausedSequencial,
+        Parallel,
+        PrewarmedParallel,
+    }
     public long[] results_;
     public PingRunner() {
     }
 
-    public IEnumerator Start(int n_attempt, bool parallel) {
+    public IEnumerator Start(int n_attempt, Pattern p) {
         results_ = new long[n_attempt];
-        return Exec(n_attempt, parallel);
+        PrepareSlots(n_attempt);
+        switch (p) {
+        case Pattern.Parallel: 
+        case Pattern.PrewarmedParallel:
+            var start_ts_list = new long[n_attempt];
+            for (int i = 0; i < n_attempt; i++) {
+                start_ts_list[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                InitSlot(i, start_ts_list[i]);
+                if (p == Pattern.PrewarmedParallel && i == 0) {
+                    while (!SlotFinished(i)) {
+                        yield return null;
+                    }
+                    results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
+                }
+            }
+            int n_start = p == Pattern.PrewarmedParallel ? 1 : 0;
+            int n_finish = n_start;
+            while (n_attempt > n_finish) {
+                for (int i = n_start; i < n_attempt; i++) {
+                    if (HasSlot(i) && SlotFinished(i)) {
+                        string error = SlotError(i);
+                        if (!string.IsNullOrEmpty(error)) {
+                            Debug.Log(error);
+                            results_[i] = -1;
+                        } else {
+                            results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
+                        }
+                        n_finish++;
+                    }
+                }
+                yield return null;
+            }
+            break;
+        case Pattern.Sequencial:
+        case Pattern.PausedSequencial:
+            for (int i = 0; i < n_attempt; i++) {
+                var start_ts = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                InitSlot(i, start_ts);
+                while (!SlotFinished(i)) {
+                    yield return null;
+                }
+
+                string error = SlotError(i);
+                if (!string.IsNullOrEmpty(error)) {
+                    Debug.Log(error);
+                    results_[i] = -1;
+                } else {
+                    results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts;
+                }
+
+                if (p == Pattern.PausedSequencial) {
+                    yield return new WaitForSeconds(3.0f);
+                }
+            }
+            break;
+        }
     }
-    public virtual IEnumerator Exec(int n_attempt, bool parallel) {
-        yield return null;
-    }
+    public virtual void PrepareSlots(int size) {}
+    public virtual void InitSlot(int slot_id, long start_ts) {}
+    public virtual bool HasSlot(int slot_id) { return false; }
+    public virtual bool SlotFinished(int slot_id) { return true; }
+    public virtual string SlotError(int slot_id) { return null; }
 }
 class RestPing : PingRunner {
     string url_;
+    UnityWebRequest[] slots_;
 
     public class PingProtocol {
         public long start_ts;
@@ -45,51 +109,25 @@ class RestPing : PingRunner {
         return www;
     }
 
-    public override IEnumerator Exec(int n_attempt, bool parallel) {
-        if (parallel) {
-            var start_ts_list = new long[n_attempt];
-            var wwws = new UnityWebRequest[n_attempt];
-            for (int i = 0; i < n_attempt; i++) {
-                start_ts_list[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                wwws[i] = CreateRequest(start_ts_list[i]);
-                wwws[i].SendWebRequest();
-            }
-            int n_finish = 0;
-            while (n_attempt > n_finish) {
-                for (int i = 0; i < n_attempt; i++) {
-                    if (wwws[i] != null && wwws[i].isDone) {
-                        if (wwws[i].isNetworkError || wwws[i].isHttpError) {
-                            Debug.Log(wwws[i].error);
-                            results_[i] = -1;
-                        } else {
-                            results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
-                        }
-                        n_finish++;
-                        wwws[i] = null;
-                    }
-                }
-                yield return null;
-            }
-        } else {
-            for (int i = 0; i < n_attempt; i++) {
-                var start_ts = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                var www = CreateRequest(start_ts);
-                yield return www.SendWebRequest();
-
-                if (www.isNetworkError || www.isHttpError) {
-                    Debug.Log(www.error);
-                    results_[i] = -1;
-                } else {
-                    results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts;
-                }
-            }
-        }
-
+    public override void PrepareSlots(int size) {
+        slots_ = new UnityWebRequest[size];
     }
+    public override void InitSlot(int slot_id, long start_ts) {
+        slots_[slot_id] = CreateRequest(start_ts);
+        slots_[slot_id].SendWebRequest();
+    }
+    public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
+    public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
+    public override string SlotError(int slot_id) { return slots_[slot_id].error; }
+
 }
+/* class RestH2Ping : PingRunner {
+    HttpClient client_;
+}*/
 class GrpcPing : PingRunner {
     Channel channel_;
     LatencyResearchGrpc.Service.ServiceClient client_;
+    MeasureTask[] slots_;
 
     public GrpcPing(string domain, string iaas) : base() {
         channel_ = new Channel(
@@ -105,36 +143,15 @@ class GrpcPing : PingRunner {
         });
     }
 
-    public override IEnumerator Exec(int n_attempt, bool parallel) {
-        if (parallel) {
-            var start_ts_list = new long[n_attempt];
-            var tasks = new MeasureTask[n_attempt];
-            for (int i = 0; i < n_attempt; i++) {
-                start_ts_list[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                tasks[i] = Call(start_ts_list[i]);
-            }
-            int n_finish = 0;
-            while (n_attempt > n_finish) {
-                for (int i = 0; i < n_attempt; i++) {
-                    if (tasks[i] != null && tasks[i].ResponseAsync.IsCompleted) {
-                        results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
-                        n_finish++;
-                        tasks[i] = null;
-                    }
-                }
-                yield return null;
-            }
-        } else {
-            for (int i = 0; i < n_attempt; i++) {
-                var start_ts = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                var task = Call(start_ts);
-                while (!task.ResponseAsync.IsCompleted) {
-                    yield return null;
-                }
-                results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts;
-            }
-        }
+    public override void PrepareSlots(int size) {
+        slots_ = new MeasureTask[size];
     }
+    public override void InitSlot(int slot_id, long start_ts) {
+        slots_[slot_id] = Call(start_ts);
+    }
+    public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
+    public override bool SlotFinished(int slot_id) { return slots_[slot_id].ResponseAsync.IsCompleted; }
+    public override string SlotError(int slot_id) { return null; }
 }
 
 }

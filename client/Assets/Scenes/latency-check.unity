@@ -209,4 +209,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   domain: yourdomain.com
   iaas: aws
-  parallel: 0
+  pattern: 0

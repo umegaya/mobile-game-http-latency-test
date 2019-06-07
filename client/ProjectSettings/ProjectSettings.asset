@@ -155,6 +155,7 @@ PlayerSettings:
   applicationIdentifier:
     Android: jp.suntomi.lr
     Standalone: com.Company.ProductName
+    iOS: com.suntomi.lr
   buildNumber: {}
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 16
@@ -598,7 +599,8 @@ PlayerSettings:
   allowUnsafeCode: 0
   additionalIl2CppArgs: 
   scriptingRuntimeVersion: 1
-  apiCompatibilityLevelPerPlatform: {}
+  apiCompatibilityLevelPerPlatform:
+    iOS: 6
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
   metroPackageName: Template_2D

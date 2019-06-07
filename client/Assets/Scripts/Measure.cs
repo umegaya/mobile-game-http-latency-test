@@ -7,7 +7,7 @@ namespace LatencyResearch {
     public class Measure : MonoBehaviour {
         public string domain;
         public string iaas;
-        public bool parallel;
+        public PingRunner.Pattern pattern;
 
         void Start() {
             StartCoroutine(Exec());
@@ -17,9 +17,9 @@ namespace LatencyResearch {
             var rest = new RestPing(domain, iaas);
             var grpc = new GrpcPing(domain, iaas);
 
-            yield return rest.Start(5, parallel);
+            yield return rest.Start(5, pattern);
             Dump("rest", rest);
-            yield return grpc.Start(5, parallel);
+            yield return grpc.Start(5, pattern);
             Dump("grpc", grpc);
         }
 
