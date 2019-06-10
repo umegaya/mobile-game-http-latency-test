@@ -15,6 +15,9 @@ public class PingRunner {
         Parallel,
         PrewarmedParallel,
     }
+    public class PingProtocol {
+        public long start_ts;
+    }
     public long[] results_;
     public PingRunner() {
     }
@@ -88,10 +91,6 @@ class RestPing : PingRunner {
     string url_;
     UnityWebRequest[] slots_;
 
-    public class PingProtocol {
-        public long start_ts;
-    }
-
     public RestPing(string domain, string iaas) : base() {
         url_ = string.Format("https://latency-research.rest.service.{0}/api/measure", domain);
     }
@@ -121,9 +120,37 @@ class RestPing : PingRunner {
     public override string SlotError(int slot_id) { return slots_[slot_id].error; }
 
 }
-/* class RestH2Ping : PingRunner {
-    HttpClient client_;
-}*/
+class RestH2Ping : PingRunner {
+    Mhttp.Client client_;
+    string url_;
+    Mhttp.Client.Response[] slots_;
+
+    public RestH2Ping(string domain, string iaas) {
+        client_ = new Mhttp.Client();
+        client_.NewConfig("rest2", new Dictionary<string, string> {
+            { "Content-Type", "application/json" }
+        });
+        url_ = string.Format("https://latency-research.rest.service.{0}/api/measure", domain);
+    }
+
+    public override void PrepareSlots(int size) {
+        slots_ = new Mhttp.Client.Response[size];
+    }
+    public override void InitSlot(int slot_id, long start_ts) {
+        var ping = new PingProtocol {
+            start_ts = start_ts
+        };
+        var req = JsonUtility.ToJson(ping);
+        byte[] postData = System.Text.Encoding.UTF8.GetBytes (req);
+        slots_[slot_id] = client_.Send("rest2", new Mhttp.Client.Request {
+            url = url_,
+            body = postData,
+        });
+    }
+    public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
+    public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
+    public override string SlotError(int slot_id) { return slots_[slot_id].error; }
+}
 class GrpcPing : PingRunner {
     Channel channel_;
     LatencyResearchGrpc.Service.ServiceClient client_;

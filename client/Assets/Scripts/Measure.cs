@@ -13,12 +13,19 @@ namespace LatencyResearch {
             StartCoroutine(Exec());
         }
 
+        void Update() {
+            Mhttp.Client.Update();
+        }
+
         IEnumerator Exec() {
             var rest = new RestPing(domain, iaas);
             var grpc = new GrpcPing(domain, iaas);
+            var rest2 = new RestH2Ping(domain, iaas);
 
             yield return rest.Start(5, pattern);
             Dump("rest", rest);
+            yield return rest2.Start(5, pattern);
+            Dump("rest2", rest2);
             yield return grpc.Start(5, pattern);
             Dump("grpc", grpc);
         }
