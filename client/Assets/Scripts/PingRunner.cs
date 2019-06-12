@@ -36,6 +36,7 @@ public class PingRunner {
                     while (!SlotFinished(i)) {
                         yield return null;
                     }
+                    FinSlot(i);
                     results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
                 }
             }
@@ -51,6 +52,7 @@ public class PingRunner {
                         } else {
                             results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
                         }
+                        FinSlot(i);
                         n_finish++;
                     }
                 }
@@ -73,6 +75,7 @@ public class PingRunner {
                 } else {
                     results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts;
                 }
+                FinSlot(i);
 
                 if (p == Pattern.PausedSequencial) {
                     yield return new WaitForSeconds(3.0f);
@@ -83,6 +86,7 @@ public class PingRunner {
     }
     public virtual void PrepareSlots(int size) {}
     public virtual void InitSlot(int slot_id, long start_ts) {}
+    public virtual void FinSlot(int slot_id) {}
     public virtual bool HasSlot(int slot_id) { return false; }
     public virtual bool SlotFinished(int slot_id) { return true; }
     public virtual string SlotError(int slot_id) { return null; }
@@ -118,18 +122,14 @@ class RestPing : PingRunner {
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
     public override string SlotError(int slot_id) { return slots_[slot_id].error; }
+    public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
 
 }
 class RestH2Ping : PingRunner {
-    Mhttp.Client client_;
     string url_;
     Mhttp.Client.Response[] slots_;
 
     public RestH2Ping(string domain, string iaas) {
-        client_ = new Mhttp.Client();
-        client_.NewConfig("rest2", new Dictionary<string, string> {
-            { "Content-Type", "application/json" }
-        });
         url_ = string.Format("https://latency-research.rest.service.{0}/api/measure", domain);
     }
 
@@ -142,14 +142,18 @@ class RestH2Ping : PingRunner {
         };
         var req = JsonUtility.ToJson(ping);
         byte[] postData = System.Text.Encoding.UTF8.GetBytes (req);
-        slots_[slot_id] = client_.Send("rest2", new Mhttp.Client.Request {
+        slots_[slot_id] = Mhttp.Client.Send(new Mhttp.Client.Request {
             url = url_,
+            headers = new Dictionary<string, string> {
+                { "Content-Type", "application/json" }
+            },
             body = postData,
         });
     }
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
     public override string SlotError(int slot_id) { return slots_[slot_id].error; }
+    public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
 }
 class GrpcPing : PingRunner {
     Channel channel_;
@@ -179,6 +183,8 @@ class GrpcPing : PingRunner {
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].ResponseAsync.IsCompleted; }
     public override string SlotError(int slot_id) { return null; }
+    public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
+
 }
 
 }

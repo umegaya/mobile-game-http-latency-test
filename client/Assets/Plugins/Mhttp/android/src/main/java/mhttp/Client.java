@@ -22,24 +22,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class Client {
-    public class Config {
-        Headers.Builder headerBuilder_ = new Headers.Builder();
-        Headers headers_ = null;
-        public Config() {}
-
-        Config setHeader(String key, String value) {
-            headerBuilder_ = headerBuilder_.add(key, value);
-            return this;
-        }
-
-        Headers getHeaders() {
-            if (headers_ == null) {
-                headers_ = headerBuilder_.build();
-            }
-            return headers_;
-        }
-    }
-
     public class HttpTask implements Callback {
         public String uuid_;
         public Request request_;
@@ -72,34 +54,15 @@ public class Client {
         }
         return s_instance;
     }
-    static String sanitizePath(String maybeUrlWithoutPath) {
-        Matcher m = s_sanitizePattern.matcher(maybeUrlWithoutPath);
-        if (!m.find()) {
-            throw new InvalidParameterException("maybeUrlWithoutPath:" + maybeUrlWithoutPath);
-        }
-        return m.group(1);
-    }
 
     OkHttpClient client_ = new OkHttpClient();
-    HashMap<String, Config> configs_ = new HashMap<String, Config>();
     ConcurrentHashMap<String, HttpTask> tasks_ = new ConcurrentHashMap<String, HttpTask>();
     ConcurrentLinkedQueue<String> finished_ = new ConcurrentLinkedQueue<String>();
 
-
-    public Config newConfig(String name) {
-        Config c = configs_.get(name);
-        if (c == null) {
-            c = new Config();
-            configs_.put(name, c);
-        }
-        return c;
-    }
-
     public String execute(
-        String uuid, String configName, 
-        String url, String method, byte[] body
+        String uuid, 
+        String url, String method, String[] headers, byte[] body
     ) {
-        Config c = configs_.get(configName);
         Request.Builder b = new Request.Builder().url(url);
 
         if (body != null) {
@@ -107,8 +70,12 @@ public class Client {
         } else {
             b = b.method("GET", null);
         }
-        if (c != null) {
-            b = b.headers(c.getHeaders());
+        if (headers != null) {
+            Headers.Builder hb = new Headers.Builder();
+            for (int i = 0; i < headers.length; i += 2) {
+                hb = hb.add(headers[i], headers[i + 1]);
+            }
+            b = b.headers(hb.build());
         }
         Request r = b.build();
         HttpTask t = new HttpTask(uuid, r);
