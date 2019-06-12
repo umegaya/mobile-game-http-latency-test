@@ -51,7 +51,7 @@ namespace Mhttp {
                     return Client.client_.Call<string>("error", uuid_);
                 }
             }
-            public byte[] body {
+            public byte[] data {
                 get {
                     AndroidJavaObject obj = Client.client_.Call<AndroidJavaObject>("body", uuid_);
                     if (obj.GetRawObject() != System.IntPtr.Zero) {

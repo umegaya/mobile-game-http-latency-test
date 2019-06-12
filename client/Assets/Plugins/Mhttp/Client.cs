@@ -18,7 +18,7 @@ namespace Mhttp {
             Request request { get; }
             int code { get; }
             string error { get; }
-            byte[] body { get; }
+            byte[] data { get; }
             string header(string key);
             bool isDone { get;}
         }

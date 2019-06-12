@@ -22,6 +22,28 @@ public class PingRunner {
     public PingRunner() {
     }
 
+    public bool VerifyResponse(int slot_id, long start_ts) {
+        var obj = SlotResponse(slot_id);
+        long resp_start_ts;
+        if (obj.GetType() == typeof(byte[])) {
+            var data = System.Text.Encoding.UTF8.GetString(
+                (byte[])obj
+            );
+            var resp = JsonUtility.FromJson<PingProtocol>(data);
+            resp_start_ts = resp.start_ts;
+        } else if (obj.GetType() == typeof(LatencyResearchGrpc.MeasureReply)) {
+            var resp = (LatencyResearchGrpc.MeasureReply)obj;
+            resp_start_ts = (long)resp.StartTs;
+        } else {
+            Debug.Log("invalid response type:" + obj.GetType().Name);
+            return false;
+        }
+        if (resp_start_ts != start_ts) {
+            return false;
+        }
+        return true;
+    }
+
     public IEnumerator Start(int n_attempt, Pattern p) {
         results_ = new long[n_attempt];
         PrepareSlots(n_attempt);
@@ -36,8 +58,16 @@ public class PingRunner {
                     while (!SlotFinished(i)) {
                         yield return null;
                     }
+                    string error = SlotError(i);
+                    if (!string.IsNullOrEmpty(error)) {
+                        results_[i] = -1;
+                    } else if (!VerifyResponse(i, start_ts_list[i])) {
+                        Debug.Log("response incorrect");
+                        results_[i] = -1;
+                    } else {
+                        results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
+                    }
                     FinSlot(i);
-                    results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
                 }
             }
             int n_start = p == Pattern.PrewarmedParallel ? 1 : 0;
@@ -48,6 +78,9 @@ public class PingRunner {
                         string error = SlotError(i);
                         if (!string.IsNullOrEmpty(error)) {
                             Debug.Log(error);
+                            results_[i] = -1;
+                        } else if (!VerifyResponse(i, start_ts_list[i])) {
+                            Debug.Log("response incorrect");
                             results_[i] = -1;
                         } else {
                             results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
@@ -72,6 +105,9 @@ public class PingRunner {
                 if (!string.IsNullOrEmpty(error)) {
                     Debug.Log(error);
                     results_[i] = -1;
+                } else if (!VerifyResponse(i, start_ts)) {
+                    Debug.Log("response incorrect");
+                    results_[i] = -1;
                 } else {
                     results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts;
                 }
@@ -90,6 +126,7 @@ public class PingRunner {
     public virtual bool HasSlot(int slot_id) { return false; }
     public virtual bool SlotFinished(int slot_id) { return true; }
     public virtual string SlotError(int slot_id) { return null; }
+    public virtual object SlotResponse(int slot_id) { return null; }
 }
 class RestPing : PingRunner {
     string url_;
@@ -123,7 +160,7 @@ class RestPing : PingRunner {
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
     public override string SlotError(int slot_id) { return slots_[slot_id].error; }
     public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
-
+    public override object SlotResponse(int slot_id) { return slots_[slot_id].downloadHandler.data; }
 }
 class RestH2Ping : PingRunner {
     string url_;
@@ -154,6 +191,7 @@ class RestH2Ping : PingRunner {
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
     public override string SlotError(int slot_id) { return slots_[slot_id].error; }
     public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
+    public override object SlotResponse(int slot_id) { return slots_[slot_id].data; }
 }
 class GrpcPing : PingRunner {
     Channel channel_;
@@ -184,7 +222,7 @@ class GrpcPing : PingRunner {
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].ResponseAsync.IsCompleted; }
     public override string SlotError(int slot_id) { return null; }
     public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
-
+    public override object SlotResponse(int slot_id) { return slots_[slot_id].ResponseAsync.Result; }
 }
 
 }
