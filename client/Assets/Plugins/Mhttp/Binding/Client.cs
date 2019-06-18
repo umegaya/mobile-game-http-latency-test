@@ -20,7 +20,7 @@ namespace Mhttp {
             string error { get; }
             byte[] data { get; }
             string header(string key);
-            bool isDone { get;}
+            bool isDone { get; }
         }
     }
 }

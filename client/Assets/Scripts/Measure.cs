@@ -26,6 +26,7 @@ namespace LatencyResearch {
             Dump("rest", rest);
             yield return rest2.Start(5, pattern);
             Dump("rest2", rest2);
+            System.GC.Collect();
             yield return grpc.Start(5, pattern);
             Dump("grpc", grpc);
         }

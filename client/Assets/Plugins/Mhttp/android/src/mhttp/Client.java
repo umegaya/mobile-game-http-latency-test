@@ -1,4 +1,4 @@
-package main.java.mhttp;
+package mhttp;
 
 import java.security.InvalidParameterException;
 import java.util.HashMap;

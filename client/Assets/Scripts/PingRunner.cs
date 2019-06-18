@@ -25,6 +25,10 @@ public class PingRunner {
     public bool VerifyResponse(int slot_id, long start_ts) {
         var obj = SlotResponse(slot_id);
         long resp_start_ts;
+        if (obj == null) {
+            Debug.Log("obj == null");
+            return false;
+        }
         if (obj.GetType() == typeof(byte[])) {
             var data = System.Text.Encoding.UTF8.GetString(
                 (byte[])obj
@@ -179,6 +183,7 @@ class RestH2Ping : PingRunner {
         };
         var req = JsonUtility.ToJson(ping);
         byte[] postData = System.Text.Encoding.UTF8.GetBytes (req);
+        Debug.Log("InitSlot:" + slot_id);
         slots_[slot_id] = Mhttp.Client.Send(new Mhttp.Client.Request {
             url = url_,
             headers = new Dictionary<string, string> {
@@ -186,6 +191,7 @@ class RestH2Ping : PingRunner {
             },
             body = postData,
         });
+        Debug.Log("end InitSlot:" + slot_id);
     }
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
@@ -220,7 +226,10 @@ class GrpcPing : PingRunner {
     }
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].ResponseAsync.IsCompleted; }
-    public override string SlotError(int slot_id) { return null; }
+    public override string SlotError(int slot_id) { 
+        var ex = slots_[slot_id].ResponseAsync.Exception; 
+        return ex != null ? ex.ToString() : null;
+    }
     public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
     public override object SlotResponse(int slot_id) { return slots_[slot_id].ResponseAsync.Result; }
 }
