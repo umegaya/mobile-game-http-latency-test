@@ -76,3 +76,10 @@
 ### conclusion
 - we have both high concurrency for API and static file request, http2 should be best choice. 
 - if concurrency is not so high, I recommend http 1.1 with single domain
+
+
+### credit
+- nice CC0 pictures from https://pixaboy.com 
+- great ios http2 library from https://github.com/twitter/ios-twitter-network-layer
+- amazing android http2 library from https://github.com/square/okhttp
+

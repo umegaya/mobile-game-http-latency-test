@@ -15,3 +15,6 @@ output "certificates" {
 output "zone_id" {
   value = "${data.aws_route53_zone.aws-module-cert-root-domain.zone_id}"
 }
+output "domain_names" {
+  value = [for c in aws_acm_certificate.aws-module-cert-certificate: c.domain_name]
+}

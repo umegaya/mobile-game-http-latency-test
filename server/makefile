@@ -1,6 +1,7 @@
 NAME=latency-research-websv
 PORTS=-p 80:80 -p 50051:50051
 IMAGE=
+CS_OUT=
 
 .PHONY: build
 build:
@@ -40,3 +41,6 @@ endef
 
 proto_cs:
 	$(call protoc,csharp,api.proto,$(CS_OUT))
+
+redirector:
+	make -C tools/redirector image IMAGE=$(IMAGE)

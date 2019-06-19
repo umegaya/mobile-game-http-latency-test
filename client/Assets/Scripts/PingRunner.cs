@@ -183,7 +183,6 @@ class RestH2Ping : PingRunner {
         };
         var req = JsonUtility.ToJson(ping);
         byte[] postData = System.Text.Encoding.UTF8.GetBytes (req);
-        Debug.Log("InitSlot:" + slot_id);
         slots_[slot_id] = Mhttp.Client.Send(new Mhttp.Client.Request {
             url = url_,
             headers = new Dictionary<string, string> {
@@ -191,7 +190,6 @@ class RestH2Ping : PingRunner {
             },
             body = postData,
         });
-        Debug.Log("end InitSlot:" + slot_id);
     }
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }

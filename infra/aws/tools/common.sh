@@ -8,7 +8,7 @@ tf() {
 		-e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
 		-e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
 		-v /Users:/Users \
-		-v $TFROOT/../modules:/modules \
+		-v $TFROOT/../resources:/resources \
 		-v $TFROOT:/tf -w /tf \
 		hashicorp/terraform:light $@
 }

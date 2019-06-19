@@ -98,23 +98,24 @@ resource "aws_lb" "aws-module-lb-lb" {
   }
 }
 
-resource "aws_lb_target_group" "aws-module-lb-target-group" {
-  count       = "${length(var.served_ports)}"
-  name        = "${var.namespace}-tg-${var.served_ports[count.index]}"
-  port        = "${
-    (
-      element(var.inner_served_ports, count.index) != 0
-    ) ? 
-    var.inner_served_ports[count.index] : 
-    var.served_ports[count.index]
-  }"
-  protocol    = "${
+locals {
+  target_group_ports = (
+    element(var.target_group_ports, 0) != 0
+  ) ? var.target_group_ports : var.served_ports
+  target_group_protocol = "${
     (
       length(var.inner_protocol) > 0
     ) ? 
     var.inner_protocol : 
     var.protocol
   }"
+}
+
+resource "aws_lb_target_group" "aws-module-lb-target-group" {
+  count       = "${length(local.target_group_ports)}"
+  name        = "${var.namespace}-tg-${local.target_group_ports[count.index]}"
+  port        = local.target_group_ports[count.index]
+  protocol    = "${local.target_group_protocol}"
   target_type = "instance"
   vpc_id      = "${var.vpc_id}"
 

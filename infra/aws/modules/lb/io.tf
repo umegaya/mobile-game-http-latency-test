@@ -10,7 +10,7 @@ variable "vpc_id" {
 variable "served_ports" {
   type = list(number)
 }
-variable "inner_served_ports" {
+variable "target_group_ports" {
   type = list(number)
   default = [0]
 }
