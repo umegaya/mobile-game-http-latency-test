@@ -19,7 +19,9 @@ public class PingRunner {
         public long start_ts;
     }
     public long[] results_;
-    public PingRunner() {
+    public string baseUrl_;
+    public PingRunner(string domain) {
+        baseUrl_ = string.Format("https://latency-research.rest.service.{0}", domain);
     }
 
     public bool VerifyResponse(int slot_id, long start_ts) {
@@ -124,8 +126,78 @@ public class PingRunner {
             break;
         }
     }
+    public IEnumerator StartDownload(string[] downloadFiles, Pattern p) {
+        results_ = new long[downloadFiles.Length];
+        PrepareSlots(downloadFiles.Length);
+        switch (p) {
+        case Pattern.Parallel: 
+        case Pattern.PrewarmedParallel:
+            var start_ts_list = new long[downloadFiles.Length];
+            for (int i = 0; i < downloadFiles.Length; i++) {
+                var url = string.Format("{0}/static/{1}", baseUrl_, downloadFiles[i]);
+                start_ts_list[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                InitDownloadSlot(i, url);
+                if (p == Pattern.PrewarmedParallel && i == 0) {
+                    while (!SlotFinished(i)) {
+                        yield return null;
+                    }
+                    string error = SlotError(i);
+                    if (!string.IsNullOrEmpty(error)) {
+                        results_[i] = -1;
+                    } else {
+                        results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
+                    }
+                    FinSlot(i);
+                }
+            }
+            int n_start = p == Pattern.PrewarmedParallel ? 1 : 0;
+            int n_finish = n_start;
+            while (downloadFiles.Length > n_finish) {
+                for (int i = n_start; i < downloadFiles.Length; i++) {
+                    if (HasSlot(i) && SlotFinished(i)) {
+                        string error = SlotError(i);
+                        if (!string.IsNullOrEmpty(error)) {
+                            Debug.Log(error);
+                            results_[i] = -1;
+                        } else {
+                            results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts_list[i];
+                        }
+                        FinSlot(i);
+                        n_finish++;
+                    }
+                }
+                yield return null;
+            }
+            break;
+        case Pattern.Sequencial:
+        case Pattern.PausedSequencial:
+            for (int i = 0; i < downloadFiles.Length; i++) {
+                var url = string.Format("{0}/static/{1}", baseUrl_, downloadFiles[i]);
+                var start_ts = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                InitDownloadSlot(i, url);
+                while (!SlotFinished(i)) {
+                    yield return null;
+                }
+
+                string error = SlotError(i);
+                if (!string.IsNullOrEmpty(error)) {
+                    Debug.Log(error);
+                    results_[i] = -1;
+                } else {
+                    results_[i] = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start_ts;
+                }
+                FinSlot(i);
+
+                if (p == Pattern.PausedSequencial) {
+                    yield return new WaitForSeconds(3.0f);
+                }
+            }
+            break;
+        }        
+    }
     public virtual void PrepareSlots(int size) {}
     public virtual void InitSlot(int slot_id, long start_ts) {}
+    public virtual void InitDownloadSlot(int slot_id, string url) {}
     public virtual void FinSlot(int slot_id) {}
     public virtual bool HasSlot(int slot_id) { return false; }
     public virtual bool SlotFinished(int slot_id) { return true; }
@@ -136,8 +208,8 @@ class UnityPing : PingRunner {
     string url_;
     UnityWebRequest[] slots_;
 
-    public UnityPing(string domain, string iaas) : base() {
-        url_ = string.Format("https://latency-research.rest.service.{0}/api/measure", domain);
+    public UnityPing(string domain, string iaas) : base(domain) {
+        url_ = string.Format("{0}/api/measure", baseUrl_);
     }
 
     UnityWebRequest CreateRequest(long start_ts) {
@@ -153,11 +225,21 @@ class UnityPing : PingRunner {
         return www;
     }
 
+    UnityWebRequest CreateDownloadRequest(string url) {
+        var www = new UnityWebRequest(url);
+        www.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+        return www;
+    }
+
     public override void PrepareSlots(int size) {
         slots_ = new UnityWebRequest[size];
     }
     public override void InitSlot(int slot_id, long start_ts) {
         slots_[slot_id] = CreateRequest(start_ts);
+        slots_[slot_id].SendWebRequest();
+    }
+    public override void InitDownloadSlot(int slot_id, string url) {
+        slots_[slot_id] = CreateDownloadRequest(url);
         slots_[slot_id].SendWebRequest();
     }
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
@@ -170,8 +252,8 @@ class MhttpPing : PingRunner {
     string url_;
     Mhttp.Client.Response[] slots_;
 
-    public MhttpPing(string domain, string iaas) {
-        url_ = string.Format("https://latency-research.rest.service.{0}/api/measure", domain);
+    public MhttpPing(string domain, string iaas) : base(domain) {
+        url_ = string.Format("{0}/api/measure", baseUrl_);
     }
 
     public override void PrepareSlots(int size) {
@@ -191,6 +273,11 @@ class MhttpPing : PingRunner {
             body = postData,
         });
     }
+    public override void InitDownloadSlot(int slot_id, string url) {
+        slots_[slot_id] = Mhttp.Client.Send(new Mhttp.Client.Request {
+            url = url
+        });
+    }
     public override bool HasSlot(int slot_id) { return slots_[slot_id] != null; }
     public override bool SlotFinished(int slot_id) { return slots_[slot_id].isDone; }
     public override string SlotError(int slot_id) { return slots_[slot_id].error; }
@@ -202,7 +289,7 @@ class GrpcPing : PingRunner {
     LatencyResearchGrpc.Service.ServiceClient client_;
     MeasureTask[] slots_;
 
-    public GrpcPing(string domain, string iaas) : base() {
+    public GrpcPing(string domain, string iaas) : base(domain) {
         channel_ = new Channel(
             string.Format("latency-research.grpc.service.{0}:50051", domain),
             ChannelCredentials.Insecure

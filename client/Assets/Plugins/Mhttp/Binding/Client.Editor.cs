@@ -54,8 +54,10 @@ namespace Mhttp {
 
         static public Response Send(Request r) {
             var resp = new UnityWebRequest(r.url);
-            foreach (var kv in r.headers) {
-                resp.SetRequestHeader(kv.Key, kv.Value);
+            if (r.headers != null) {
+                foreach (var kv in r.headers) {
+                    resp.SetRequestHeader(kv.Key, kv.Value);
+                }
             }
             if (r.method == null) {
                 if (r.body != null) {

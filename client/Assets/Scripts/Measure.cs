@@ -10,7 +10,8 @@ namespace LatencyResearch {
         public PingRunner.Pattern pattern;
 
         void Start() {
-            StartCoroutine(Exec());
+            // StartCoroutine(Exec());
+            StartCoroutine(ExecDownloadAndApiCall());
         }
 
         void Update() {
@@ -28,6 +29,33 @@ namespace LatencyResearch {
             Dump("mhttp", mhttp);
             yield return grpc.Start(5, pattern);
             Dump("grpc", grpc);
+
+            System.GC.Collect();
+        }
+
+        IEnumerator ExecDownloadAndApiCall() {
+            var downloadFiles = new string [] {
+                "capitol-2212102_1280.jpg",
+                "jordan-1846284_1280.jpg",
+                "sunset-4274662_1280.jpg",
+                "hanoi-4176310_1280.jpg",
+                "mirror-house-4278611_1280.jpg"
+            };
+            var unity = new UnityPing(domain, iaas);
+            var mhttp = new MhttpPing(domain, iaas);
+
+            yield return unity.StartDownload(downloadFiles, pattern);
+            Dump("unity DL", unity);
+            yield return mhttp.StartDownload(downloadFiles, pattern);
+            Dump("mhttp DL", mhttp);
+
+            var grpc = new GrpcPing(domain, iaas);
+            var mhttp2 = new MhttpPing(domain, iaas);
+            
+            yield return mhttp2.Start(5, pattern);
+            Dump("mhttp API", mhttp2);
+            yield return grpc.Start(5, pattern);
+            Dump("grpc API", grpc);
 
             System.GC.Collect();
         }
