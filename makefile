@@ -2,6 +2,7 @@
 STATE=#terraform resource path
 IMAGE=#docker image
 GRPC_HOST=localhost:50051
+DEST=
 
 # tfvars declaration
 DOMAIN=#your.domain.name
@@ -29,3 +30,5 @@ aws-show:
 build:
 	make -C server image IMAGE=$(IMAGE)
 
+update_mhttp:
+	rsync -av --exclude='*.meta' --exclude='iOS/*' client/Assets/Plugins/Mhttp/ $(DEST)

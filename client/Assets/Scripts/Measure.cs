@@ -44,10 +44,10 @@ namespace LatencyResearch {
             var unity = new UnityPing(domain, iaas);
             var mhttp = new MhttpPing(domain, iaas);
 
-            yield return unity.StartDownload(downloadFiles, pattern);
-            Dump("unity DL", unity);
             yield return mhttp.StartDownload(downloadFiles, pattern);
             Dump("mhttp DL", mhttp);
+            yield return unity.StartDownload(downloadFiles, pattern);
+            Dump("unity DL", unity);
 
             var grpc = new GrpcPing(domain, iaas);
             var mhttp2 = new MhttpPing(domain, iaas);
