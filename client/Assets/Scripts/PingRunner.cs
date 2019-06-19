@@ -132,11 +132,11 @@ public class PingRunner {
     public virtual string SlotError(int slot_id) { return null; }
     public virtual object SlotResponse(int slot_id) { return null; }
 }
-class RestPing : PingRunner {
+class UnityPing : PingRunner {
     string url_;
     UnityWebRequest[] slots_;
 
-    public RestPing(string domain, string iaas) : base() {
+    public UnityPing(string domain, string iaas) : base() {
         url_ = string.Format("https://latency-research.rest.service.{0}/api/measure", domain);
     }
 
@@ -166,11 +166,11 @@ class RestPing : PingRunner {
     public override void FinSlot(int slot_id) { slots_[slot_id] = null; }
     public override object SlotResponse(int slot_id) { return slots_[slot_id].downloadHandler.data; }
 }
-class RestH2Ping : PingRunner {
+class MhttpPing : PingRunner {
     string url_;
     Mhttp.Client.Response[] slots_;
 
-    public RestH2Ping(string domain, string iaas) {
+    public MhttpPing(string domain, string iaas) {
         url_ = string.Format("https://latency-research.rest.service.{0}/api/measure", domain);
     }
 

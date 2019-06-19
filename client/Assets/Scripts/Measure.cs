@@ -18,17 +18,18 @@ namespace LatencyResearch {
         }
 
         IEnumerator Exec() {
-            var rest = new RestPing(domain, iaas);
+            var unity = new UnityPing(domain, iaas);
             var grpc = new GrpcPing(domain, iaas);
-            var rest2 = new RestH2Ping(domain, iaas);
+            var mhttp = new MhttpPing(domain, iaas);
 
-            yield return rest.Start(5, pattern);
-            Dump("rest", rest);
-            yield return rest2.Start(5, pattern);
-            Dump("rest2", rest2);
-            System.GC.Collect();
+            yield return unity.Start(5, pattern);
+            Dump("unity", unity);
+            yield return mhttp.Start(5, pattern);
+            Dump("mhttp", mhttp);
             yield return grpc.Start(5, pattern);
             Dump("grpc", grpc);
+
+            System.GC.Collect();
         }
 
         void Dump(string header, PingRunner ping) {
