@@ -20,6 +20,7 @@ public class PingRunner {
     }
     public long[] results_;
     public string baseUrl_;
+    public long elapsed_time_;
     public PingRunner(string domain) {
         baseUrl_ = string.Format("https://latency-research.rest.service.{0}", domain);
     }
@@ -51,6 +52,7 @@ public class PingRunner {
     }
 
     public IEnumerator Start(int n_attempt, Pattern p) {
+        var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         results_ = new long[n_attempt];
         PrepareSlots(n_attempt);
         switch (p) {
@@ -125,8 +127,10 @@ public class PingRunner {
             }
             break;
         }
+        elapsed_time_ = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start;
     }
     public IEnumerator StartDownload(string[] downloadFiles, Pattern p) {
+        var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         results_ = new long[downloadFiles.Length];
         PrepareSlots(downloadFiles.Length);
         switch (p) {
@@ -193,7 +197,8 @@ public class PingRunner {
                 }
             }
             break;
-        }        
+        }
+        elapsed_time_ = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start;
     }
     public virtual void PrepareSlots(int size) {}
     public virtual void InitSlot(int slot_id, long start_ts) {}

@@ -61,7 +61,7 @@ namespace LatencyResearch {
         }
 
         void Dump(string header, PingRunner ping) {
-            Debug.Log("--------------- " + header + " ---------------");
+            Debug.Log("---------- " + header + " ---------- takes " + ping.elapsed_time_ + " ms");
             string result = ping.results_[0].ToString();
             for (int i = 1; i < ping.results_.Length; i++) {
                 result += ("|" + ping.results_[i]);
