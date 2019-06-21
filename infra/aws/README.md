@@ -1,4 +1,6 @@
 ### latency-research AWS infra
+- here, we put terraform scripts to automatically initialized the infrastructure. 
+
 - prerequisite
   - docker
   - domain name which is managed by route53

@@ -9,9 +9,22 @@ namespace LatencyResearch {
         public string iaas;
         public PingRunner.Pattern pattern;
 
+        public enum TestType {
+            ApiCallLatency,
+            DownloadFileAndApiCallLatency,
+        }
+
+        public TestType test_type = TestType.DownloadFileAndApiCallLatency;
+
         void Start() {
-            // StartCoroutine(Exec());
-            StartCoroutine(ExecDownloadAndApiCall());
+            switch (test_type) {
+            case TestType.ApiCallLatency:
+                StartCoroutine(Exec());
+                break;
+            case TestType.DownloadFileAndApiCallLatency:
+                StartCoroutine(ExecDownloadAndApiCall());
+                break;
+            }
         }
 
         void Update() {
